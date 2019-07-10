@@ -120,6 +120,12 @@ public extension ES where Base: UIScrollView {
         }
     }
     
+    func autoLoadMore() {
+        DispatchQueue.main.async { [weak base] in
+            base?.footer?.startLoadMore()
+        }
+    }
+    
     /// Stop pull to refresh
     func stopPullToRefresh(ignoreDate: Bool = false, ignoreFooter: Bool = false) {
         self.base.header?.stopRefreshing()
@@ -403,21 +409,16 @@ open class ESRefreshFooterView: ESRefreshComponent {
         
         super.offsetChangeAction(object: object, change: change)
         
-        guard isRefreshing == false && isAutoRefreshing == false && isHidden == false else {
+        guard isRefreshing == false && isAutoRefreshing == false && !noMoreData && isHidden == false else {
             // 正在loading more或者内容为空时不相应变化
             return
         }
 
-        if scrollView.contentSize.height <= 0.0 || scrollView.contentOffset.y + scrollView.contentInset.top <= 0.0 {
-            self.alpha = 0.0
-            return
-        } else {
-            self.alpha = 1.0
-        }
-        
-        if noMoreData {
-            return
-        }
+//        if scrollView.contentSize.height <= 0.0 || scrollView.contentOffset.y + scrollView.contentInset.top <= 0.0 {
+//            self.alpha = 0.0
+//        } else {
+//            self.alpha = 1.0
+//        }
         
         if scrollView.contentSize.height + scrollView.contentInset.top > scrollView.bounds.size.height {
             // 内容超过一个屏幕 计算公式，判断是不是在拖在到了底部
@@ -432,6 +433,11 @@ open class ESRefreshFooterView: ESRefreshComponent {
                 self.startRefreshing()
             }
         }
+    }
+    
+    func startLoadMore() {
+        self.animator.refresh(view: self, stateDidChange: .refreshing)
+        self.startRefreshing()
     }
     
     open override func start() {
